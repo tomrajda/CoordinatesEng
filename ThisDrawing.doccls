@@ -1,0 +1,104 @@
+﻿ 'Option Explicit
+
+Public Sub NumerujNumeruj()
+    Dim ssetObj As AcadSelectionSet
+    'Dim grpCode(0) As Integer
+    'Dim dataVal(0) As Variant
+    Dim circle_center As Variant
+    Dim centers() As Double
+    Dim objEnt As AcadText
+    Dim point(0 To 2) As Double
+    Dim i As Integer
+    Dim temp As Double
+    Dim SortColumn1 As Integer
+    Dim SortColumn2 As Integer
+    Dim a As Integer
+    Dim h As Integer
+    Dim name As Variant
+    Dim prefix As String
+    Dim str As String
+    Dim delta As Double
+    Dim bound As Double
+    Dim minPoint As Variant
+    Dim maxPoint As Variant
+      
+    With ThisDrawing.Utility
+    
+        'input
+        a = .GetInteger(vbCrLf & "Podaj pierwszy numer: ")
+        h = .GetInteger(vbCr & "Podaj wysokosc: ")
+        prefix = .GetString(True, vbCr & "Podaj prefix: ")
+    End With
+         
+    'grpCode(0) = 0
+    'dataVal(0) = "CIRCLE"
+    Set ssetObj = ThisDrawing.SelectionSets.Add("sel14")
+    'ssetObj.SelectOnScreen grpCode, dataVal          'wybranie tylko kolek
+    ssetObj.SelectOnScreen
+   
+    ReDim centers(0 To ssetObj.Count - 1, 0 To 2)   '[0-#ofObjects][x,y,radius/bound]
+    
+    'przepisanie wspolrzednych srodkow do tablicy 'centers'
+    For i = 0 To ssetObj.Count - 1
+        'circle_center =
+        'name = ssetObj.Item(i).ObjectName
+        bound = 0
+        Select Case ssetObj.Item(i).ObjectName
+        Case "AcDbCircle"
+            circle_center = ssetObj.Item(i).Center
+            bound = ssetObj.Item(i).Radius
+        Case "AcDbBlockReference"
+            circle_center = ssetObj.Item(i).InsertionPoint
+            ssetObj.Item(i).GetBoundingBox minPoint, maxPoint
+            bound = (maxPoint(1) - minPoint(1)) / 2
+            
+        Case Else
+            'MsgBox "Znaleziono obiekt (typu: " & ssetObj.Item(i).ObjectName & "), ktory nie jest obslugiwany", , "Ostrzezenie"
+            Debug.Print "Ostrzeżenie.Znaleziono nie obsługiwany obiekt (typu: " & ssetObj.Item(i).ObjectName & ")"
+            GoTo nextiteration
+        End Select
+        
+        centers(i, 0) = circle_center(0)
+        centers(i, 1) = circle_center(1)
+        centers(i, 2) = bound
+    
+nextiteration:
+    Next i
+ 
+    'delta = 10
+    'SORTOWANIE
+    SortColumm1 = 0
+    SortColumn2 = 1
+    For i = LBound(centers, 1) To UBound(centers, 1) - 1
+        For j = LBound(centers, 1) To UBound(centers, 1) - 1
+            delta = centers(j + 1, 2)
+            Condition1 = centers(j, SortColumn2) < centers(j + 1, SortColumn2) - delta
+            Condition2 = centers(j, SortColumn2) >= centers(j + 1, SortColumn2) - delta And _
+                        centers(j, SortColumn2) <= centers(j + 1, SortColumn2) + delta And _
+                        centers(j, SortColumn1) > centers(j + 1, SortColumn1)
+
+            If Condition1 Or Condition2 Then
+                For y = LBound(centers, 2) To UBound(centers, 2)
+                    t = centers(j, y)
+                    centers(j, y) = centers(j + 1, y)
+                    centers(j + 1, y) = t
+                Next y
+            End If
+        Next
+    Next
+    
+    
+    
+    'DORZUCENIE NUMERKOW
+    For i = 0 To ssetObj.Count - 1
+        point(0) = centers(i, 0)
+        point(1) = centers(i, 1)
+        point(2) = 0
+        str = prefix & a + i
+        Set objEnt = ThisDrawing.ModelSpace.AddText(str, point, h)
+    Next i
+
+    ssetObj.Delete
+    
+    
+End Sub
