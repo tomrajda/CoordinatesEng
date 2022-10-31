@@ -1,14 +1,11 @@
 Attribute VB_Name = "Module2"
 Option Explicit
 
-Public Sub Cordinates()
+Public Sub Coordinates()
     
     '' This program takes the coordinates of the selected columns
     '' (select only the column numbers) and creates a file for QPM.
     
-                ''TO DO
-    '' Saving in the same location as acad file
-    '' Refractorize code
     '' Format csv is bad?
     
     Dim ssetObj As AcadSelectionSet
@@ -20,7 +17,6 @@ Public Sub Cordinates()
     Dim column_prefix As String
     Dim fileName As String
     Dim CSVfilePath As String
-    Dim folderName As String
     Dim Drawing As AcadDocument
     Dim DXFfilePath As String
     
@@ -30,7 +26,7 @@ Public Sub Cordinates()
     MsgBox ("Zaznacz tylko numery kolumn (C1, C2, C3, ... , Cn).")
     
     '' Setting selection Acad object
-    Set ssetObj = ThisDrawing.SelectionSets.Add("User_Selection")
+    Set ssetObj = ThisDrawing.SelectionSets.Add("Selection")
         ssetObj.SelectOnScreen
     
     '' Setting Excel object
@@ -64,6 +60,7 @@ EH:
         
     Next i
     
+    '' Saving files
     '' Saving to dxf file
     Set Drawing = Application.ActiveDocument
     
@@ -72,12 +69,13 @@ EH:
     Drawing.SaveAs DXFfilePath, ac2000_dxf
 
     '' Saving to csv file
-    CSVfilePath = "QPM_" & fileName
-    
+    CSVfilePath = Left(Drawing.FullName, Len(Drawing.FullName) - _
+    Len(Drawing.name)) + ("QPM_" & fileName)
+
     ActiveWorkbook.SaveAs fileName:=CSVfilePath, _
         FileFormat:=xlCSVWindows, CreateBackup:=False
 
     '' Deleting Acad object
     ssetObj.Delete
-    
+
 End Sub
